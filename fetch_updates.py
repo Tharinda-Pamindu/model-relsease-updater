@@ -34,8 +34,8 @@ def fetch_new_items(api_url, item_type="Model"):
     items = response.json()
     
     new_items = []
-    # Get items from the last 24 hours
-    threshold_time = datetime.utcnow() - timedelta(hours=24)
+    # Get items from the last 7 days
+    threshold_time = datetime.utcnow() - timedelta(days=7)
     
     for item in items:
         created_at_str = item.get("createdAt")
@@ -105,7 +105,7 @@ def broadcast_emails(models, datasets):
     """
     
     if models:
-        html_content += "<h3>🚀 New Sinhala Models (Last 24h)</h3>"
+        html_content += "<h3>🚀 New Sinhala Models (Last 7 Days)</h3>"
         for item in models[:10]: # Top 10
             html_content += f"""
             <div class="item">
@@ -115,7 +115,7 @@ def broadcast_emails(models, datasets):
             """
             
     if datasets:
-        html_content += "<h3>📊 New Sinhala Datasets (Last 24h)</h3>"
+        html_content += "<h3>📊 New Sinhala Datasets (Last 7 Days)</h3>"
         for item in datasets[:10]: # Top 10
             html_content += f"""
             <div class="item">
@@ -162,7 +162,7 @@ def main():
             for m in new_models[:5]:
                 print(f"Model: {m['id']} - Likes: {m['likes']}")
     else:
-        print("No new updates found in the last 24 hours.")
+        print("No new updates found in the last 7 days.")
 
 if __name__ == "__main__":
     main()
