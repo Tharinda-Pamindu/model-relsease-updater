@@ -22,7 +22,7 @@ To send emails securely, you need to configure the following secrets in your rep
     *   `EMAIL_SENDER`: The email address sending the updates (e.g., `your-email@gmail.com`).
     *   `EMAIL_PASSWORD`: The app password for the sender email.
         *   **Note for Gmail**: You cannot use your regular password. You must enable 2-Step Verification and generate an **App Password**. [Guide here](https://support.google.com/accounts/answer/185833).
-    *   `EMAIL_RECEIVER`: The email address to receive the updates.
+    *   `EMAIL_RECEIVER`: The email address(es) to receive the updates. You can specify multiple emails separated by a comma (e.g., `user1@example.com,user2@example.com`).
 
 ### 3. Run Manually
 You can test the workflow by going to the **Actions** tab, selecting **Hugging Face Daily Updates**, and clicking **Run workflow**.

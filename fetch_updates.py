@@ -5,12 +5,15 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 
+import concurrent.futures
+
 # Configuration
 HF_MODELS_API = "https://huggingface.co/api/models"
 HF_DATASETS_API = "https://huggingface.co/api/datasets"
 EMAIL_SENDER = os.environ.get("EMAIL_SENDER")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
-EMAIL_RECEIVER = os.environ.get("EMAIL_RECEIVER")
+# Split by comma and strip whitespace
+EMAIL_RECEIVERS = [e.strip() for e in os.environ.get("EMAIL_RECEIVER", "").split(",") if e.strip()]
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
 
@@ -55,7 +58,24 @@ def fetch_new_items(api_url, item_type="Model"):
     
     return new_items
 
-def send_email(models, datasets):
+def send_email_to_recipient(receiver_email, subject, html_content):
+    msg = MIMEMultipart()
+    msg["From"] = EMAIL_SENDER
+    msg["To"] = receiver_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(html_content, "html"))
+
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, receiver_email, msg.as_string())
+        server.quit()
+        print(f"Email sent successfully to {receiver_email}!")
+    except Exception as e:
+        print(f"Failed to send email to {receiver_email}: {e}")
+
+def broadcast_emails(models, datasets):
     if not models and not datasets:
         print("No new items to report.")
         return
@@ -105,21 +125,15 @@ def send_email(models, datasets):
     </html>
     """
 
-    msg = MIMEMultipart()
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = EMAIL_RECEIVER
-    msg["Subject"] = subject
-    msg.attach(MIMEText(html_content, "html"))
-
-    try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
-        server.quit()
-        print("Email sent successfully!")
-    except Exception as e:
-        print(f"Failed to send email: {e}")
+    print(f"Sending emails to {len(EMAIL_RECEIVERS)} recipients...")
+    
+    # Use ThreadPoolExecutor to send emails concurrently
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [
+            executor.submit(send_email_to_recipient, email, subject, html_content)
+            for email in EMAIL_RECEIVERS
+        ]
+        concurrent.futures.wait(futures)
 
 def main():
     print("Fetching new models...")
@@ -135,10 +149,10 @@ def main():
         new_models.sort(key=lambda x: x['likes'], reverse=True)
         new_datasets.sort(key=lambda x: x['likes'], reverse=True)
         
-        if EMAIL_SENDER and EMAIL_PASSWORD and EMAIL_RECEIVER:
-            send_email(new_models, new_datasets)
+        if EMAIL_SENDER and EMAIL_PASSWORD and EMAIL_RECEIVERS:
+            broadcast_emails(new_models, new_datasets)
         else:
-            print("Email credentials not set. Skipping email.")
+            print("Email credentials or receivers not set. Skipping email.")
             # For debugging/logging purposes
             for m in new_models[:5]:
                 print(f"Model: {m['id']} - Likes: {m['likes']}")
