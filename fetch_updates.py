@@ -18,11 +18,16 @@ SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
 
 def fetch_new_items(api_url, item_type="Model"):
+    # Determine filter based on item type
+    # Models use tag 'si', Datasets use 'language:si'
+    filter_param = "si" if item_type == "Model" else "language:si"
+    
     params = {
         "sort": "createdAt",
         "direction": "-1",
-        "limit": 50,
-        "full": "true"
+        "limit": 100,
+        "full": "true",
+        "filter": filter_param
     }
     response = requests.get(api_url, params=params)
     response.raise_for_status()
@@ -80,7 +85,7 @@ def broadcast_emails(models, datasets):
         print("No new items to report.")
         return
 
-    subject = f"Hugging Face Daily Updates - {datetime.now().strftime('%Y-%m-%d')}"
+    subject = f"Sinhala Hugging Face Updates - {datetime.now().strftime('%Y-%m-%d')}"
     
     html_content = """
     <html>
@@ -96,11 +101,11 @@ def broadcast_emails(models, datasets):
     </head>
     <body>
         <div class="container">
-            <h2>Hugging Face Daily Updates</h2>
+            <h2>Sinhala Hugging Face Updates</h2>
     """
     
     if models:
-        html_content += "<h3>🚀 New Trending Models (Last 24h)</h3>"
+        html_content += "<h3>🚀 New Sinhala Models (Last 24h)</h3>"
         for item in models[:10]: # Top 10
             html_content += f"""
             <div class="item">
@@ -110,7 +115,7 @@ def broadcast_emails(models, datasets):
             """
             
     if datasets:
-        html_content += "<h3>📊 New Trending Datasets (Last 24h)</h3>"
+        html_content += "<h3>📊 New Sinhala Datasets (Last 24h)</h3>"
         for item in datasets[:10]: # Top 10
             html_content += f"""
             <div class="item">
